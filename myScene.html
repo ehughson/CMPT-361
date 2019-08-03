@@ -1,0 +1,456 @@
+<html>
+	<head>
+		<title>My first three.js app</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+		
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+		<script src="js/three.js"></script>
+		<script>
+
+			var mx = -2; 
+			var planet;
+			var sunOff = false; 
+			var renderer; 
+			var camera; 
+			var TILE_SIZE = 0.5;
+			var scene; 
+			var backgroundScene;
+			var backgroundCamera;
+			var stars; 
+			var group;
+			var targetRotation = 0;
+			var targetRotationOnMouseDown = 0;
+			var mouseX = 0;
+			var mouseXOnMouseDown = 0;
+			var windowHalfX = window.innerWidth / 2;
+			var texture;
+			var lights; 
+
+
+			init();
+			animate();
+
+
+			function init(){
+
+			//set up rendering 
+			renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.setClearColor( 0xffffff, 0);
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+			renderer.physicallyBasedShading = true;
+			document.body.appendChild( renderer.domElement );
+			if (!renderer.context.getExtension('OES_texture_float')) {
+			    alert('OES_texture_float is not supported :(');
+			  };
+
+			//set up perspective camera
+			camera = new THREE.PerspectiveCamera( 90, window.innerWidth/  window.innerHeight, 1, 3000);
+			camera.position.set( 0, 1.5, 10 );
+			camera.lookAt( 0, 0, 0 );
+
+			//create new scene and group
+			scene = new THREE.Scene();
+			group = new THREE.Group();
+			//group.position.y = 50;
+			scene.add( group );
+
+
+			camera.position.z = 5;
+
+			circle = new THREE.Object3D();
+			particle = new THREE.Object3D();
+
+			scene.add(particle);
+			//set up background and lighting 
+			scene.background = new THREE.Color(0xA598D5);
+			var ambientLight = new THREE.AmbientLight(0x999999 );
+  			scene.add(ambientLight);
+
+
+			var lights = [];
+				lights[0] = new THREE.DirectionalLight( 0xffffff, 1);
+				lights[0].position.set( 1, 0, 0 );
+				lights[1] = new THREE.DirectionalLight( 0x11E8BB, 1);
+				lights[1].position.set( 2.75, 1, 0.5 );
+				lights[2] = new THREE.DirectionalLight( 0x8200C9, 0.5 );
+				lights[2].position.set( -2.75, -1, 0.5 );
+				lights[0].castShadow = true;
+				lights[1].castShadow = true;
+				lights[2].castShadow = true;
+				scene.add( lights[0] );
+				scene.add( lights[1] );
+				scene.add( lights[2] );
+			
+				//turn on and off directional light
+			document.addEventListener("keydown", function(){
+				var keyCode = event.which;
+			    if (keyCode == 13) {
+			    	sunOff = !sunOff
+			    	lights[0].visible = !lights[0].visible;
+					lights[1].visible = !lights[1].visible;
+					lights[2].visible = !lights[2].visible;
+			    	if(sunOff == false){
+						scene.background = new THREE.Color(0xA598D5);
+
+			    	}else{
+			    		scene.background = new THREE.Color(0x403273);
+			    	}        
+			    }
+
+			},
+
+			 false);
+
+			//create pyramids
+			var geometry = new THREE.CylinderGeometry( 0.1, TILE_SIZE*4.5, TILE_SIZE*4.5, 4 );
+			var material = new THREE.MeshPhongMaterial( {color: 0xD1753D,  shading: THREE.FlatShading});
+			var cylinder = new THREE.Mesh( geometry, material );
+			cylinder.receiveShadow = true;
+			cylinder.position.x = -1.7;
+			cylinder.position.z = 1.9;
+			cylinder.receiveShadow = true;
+			cylinder.castShadow = true;
+			group.add( cylinder );
+			
+
+			var geometry = new THREE.CylinderGeometry( 0.1, TILE_SIZE*4.5, TILE_SIZE*4.5, 4);
+			var material = new THREE.MeshPhongMaterial( {color: 0xD1753D, shading: THREE.FlatShading});
+			var cylinder = new THREE.Mesh( geometry, material );
+			cylinder.receiveShadow = true;
+			cylinder.castShadow = true;
+			cylinder.position.x = 0.9;
+			cylinder.position.z = -3.9
+			group.add( cylinder );
+		
+
+			var geometry = new THREE.CylinderGeometry( 0.1,  TILE_SIZE*4.5, TILE_SIZE*5.5, 4);
+			var material = new THREE.MeshPhongMaterial( {color: 0xD1753D , shading: THREE.FlatShading});
+			var cylinder = new THREE.Mesh( geometry, material );
+			cylinder.position.x = -0.3;
+			cylinder.position.z = -1.0;
+			cylinder.castShadow = true; 
+			cylinder.receiveShadow = true;
+			group.add( cylinder );
+
+			//create type 2 pyramids
+				
+
+			var geometry = new THREE.CylinderGeometry( 0.8 / Math.sqrt( 2 ), 1.1, 0.7, 4, 1 );
+			var material = new THREE.MeshPhongMaterial( {color: 0xB5693B});
+			
+			mesh = new THREE.Mesh( geometry, material );
+			mesh.position.x = -3.3;
+			mesh.position.z = -2.0;
+			mesh.position.y = -0.5;
+			mesh.castShadow = true; 
+			mesh.receiveShadow = true;
+			group.add(mesh);
+
+			var geometry = new THREE.CylinderGeometry( 0.5 / Math.sqrt( 2 ), 0.7, 0.5, 4, 1 );
+			var material = new THREE.MeshPhongMaterial( {color: 0xB5693B });
+			mesh = new THREE.Mesh( geometry, material );
+			mesh.position.x = -3.3;
+			mesh.position.z = -2.0;
+			mesh.position.y = 0.1;
+			mesh.castShadow = true; 
+			mesh.receiveShadow = true;
+			group.add(mesh);
+
+
+			var geometry = new THREE.CylinderGeometry( 0.2 / Math.sqrt( 2 ), 0.5, 0.5, 4, 1 );
+			var material = new THREE.MeshPhongMaterial( {color: 0xB5693B });
+			mesh = new THREE.Mesh( geometry, material );
+			mesh.position.x = -3.3;
+			mesh.position.z = -2.0;
+			mesh.position.y = 0.6;
+			mesh.castShadow = true; 
+			mesh.receiveShadow = true;
+			group.add(mesh);
+
+
+			var geometry = new THREE.CylinderGeometry( 0.5 / Math.sqrt( 2 ), 0.8, 0.7, 4, 1 );
+			var material = new THREE.MeshPhongMaterial( {color: 0xB5693B});
+			mesh = new THREE.Mesh( geometry, material );
+			mesh.position.x = 3.3;
+			mesh.position.z = -2.0;
+			mesh.position.y = -0.5;
+			mesh.castShadow = true; 
+			mesh.receiveShadow = true;
+			group.add(mesh);
+
+			var geometry = new THREE.CylinderGeometry( 0.2 / Math.sqrt( 2 ), 0.4, 0.5, 4, 1 );
+			var material = new THREE.MeshPhongMaterial( {color: 0xB5693B });
+			mesh = new THREE.Mesh( geometry, material );
+			mesh.position.x = 3.3;
+			mesh.position.z = -2.0;
+			mesh.position.y = 0.1;
+			mesh.castShadow = true; 
+			mesh.receiveShadow = true;
+			group.add(mesh);
+
+
+			var geometry = new THREE.CylinderGeometry( 0.1 / Math.sqrt( 2 ), 0.2, 0.3, 4, 1 );
+			var material = new THREE.MeshPhongMaterial( {color: 0xB5693B });
+			mesh = new THREE.Mesh( geometry, material );
+			mesh.position.x = 3.3;
+			mesh.position.z = -2.0;
+			mesh.position.y = 0.4;
+			mesh.castShadow = true; 
+			mesh.receiveShadow = true;
+			group.add(mesh);
+
+
+			var geometry = new THREE.CylinderGeometry( 0.01,  TILE_SIZE*0.5, TILE_SIZE*3.5, 3);
+			var material = new THREE.MeshPhongMaterial( {color: 0xD1753D });
+			var cylinder = new THREE.Mesh( geometry, material );
+			cylinder.position.x = -1.0;
+			cylinder.position.z = -5.0;
+			cylinder.position.y = -0.5;
+			cylinder.receiveShadow = true;
+			cylinder.castShadow = true;
+			group.add( cylinder );
+
+			//create tree
+
+			var leafgeometry = new THREE.CylinderGeometry( 0.01,  TILE_SIZE*0.7, TILE_SIZE*1.7, 4);
+			var leafmaterial = new THREE.MeshPhongMaterial({color: 0x5cd65c});
+			var leaf = new THREE.Mesh(leafgeometry, leafmaterial);
+			leaf.position.x = -1.0;
+			leaf.position.z = -5.0;
+			leaf.position.y = 0.3;
+			leaf.receiveShadow = true;
+			leaf.castShadow = true;
+			group.add(leaf);
+
+			var leaf2 = leaf.clone();
+			leaf2.position.x = -1.1;
+			leaf2.position.z = -5.0;
+			leaf2.position.y = 0.3;
+			leaf2.rotation.x = -0.1;
+			leaf2.receiveShadow = true;
+			leaf2.castShadow = true;
+			group.add(leaf2);
+
+			var leaf3 = leaf.clone();
+			leaf3.position.x = -0.9;
+			leaf3.position.z = -5.0;
+			leaf3.position.y = 0.3;
+			leaf3.rotation.x = 0.1;
+			leaf3.receiveShadow = true;
+			leaf3.castShadow = true;
+			group.add(leaf3);
+
+			//create camel -- unfinished!! :(
+
+			var geometry = new THREE.BoxGeometry( 0.3, 0.3, 0.3 );
+			var material = new THREE.MeshBasicMaterial( {color: 0xC08460} );
+			var camelhead = new THREE.Mesh( geometry, material );
+			camelhead.position.x = -5.2
+			camelhead.position.y = -0.3
+			camelhead.receiveShadow = true;
+			camelhead.castShadow = true;
+			group.add( camelhead );
+
+			var geometry = new THREE.BoxGeometry( 0.4, 0.4, 0.4 );
+			var material = new THREE.MeshBasicMaterial( {color: 0xC08460} );
+			var camelbody = new THREE.Mesh( geometry, material );
+			camelbody.position.x = -4.9
+			camelbody.position.y = -.5;
+			camelbody.receiveShadow = true;
+			camelbody.castShadow = true;
+			group.add( camelbody );
+	       
+			var geometry = new THREE.BoxGeometry( 0.09, 0.5, 0.09 );
+			var material = new THREE.MeshBasicMaterial( {color: 0xC08460} );
+			var camelleg = new THREE.Mesh( geometry, material );
+			camelleg.position.x = -5.0
+			camelleg.position.y = -0.9;
+			camelleg.position.z = 0.1;
+			camelleg.translateZ( 0.1 );
+			camelleg.receiveShadow = true;
+			camelleg.castShadow = true;
+			group.add( camelleg );
+
+			var geometry = new THREE.BoxGeometry( 0.09, 0.5, 0.09 );
+			var material = new THREE.MeshBasicMaterial( {color: 0xC08460} );
+			var camelleg2 = new THREE.Mesh( geometry, material );
+			camelleg2.position.x = -5.0
+			camelleg2.position.y = -0.9;
+			camelleg2.position.z = -0.1;
+			camelleg2.translateZ( 0.1 );
+			camelleg2.receiveShadow = true;
+			camelleg2.castShadow = true;
+			group.add( camelleg2 );
+
+			var geometry = new THREE.BoxGeometry( 0.09, 0.5, 0.09 );
+			var material = new THREE.MeshBasicMaterial( {color: 0xC08460} );
+			var camelleg3 = new THREE.Mesh( geometry, material );
+			camelleg3.position.x = -4.8
+			camelleg3.position.y = -0.9;
+			camelleg3.position.z = -0.1;
+			camelleg3.translateZ( 0.1 );
+			camelleg3.receiveShadow = true;
+			camelleg3.castShadow = true;
+			group.add( camelleg3 );
+
+			var geometry = new THREE.BoxGeometry( 0.09, 0.5, 0.09 );
+			var material = new THREE.MeshBasicMaterial( {color: 0xC08460} );
+			var camelleg4 = new THREE.Mesh( geometry, material );
+			camelleg4.position.x = -4.8
+			camelleg4.position.y = -0.9;
+			camelleg4.position.z = 0.1;
+			camelleg4.translateZ( 0.1 );
+			camelleg4.receiveShadow = true;
+			camelleg4.castShadow = true;
+			group.add( camelleg4 );
+	
+			var tailgeo= new THREE.BoxGeometry( 0.009, 0.5, 0.09 );
+			var material = new THREE.MeshBasicMaterial( {color: 0xC08460} );
+			var tail = new THREE.Mesh(tailgeo, material);
+			tail.position.x = -4.7;
+			tail.position.y = -0.6;
+			tail.rotation.x = 0.0;
+			tail.rotation.z = 0.5;
+			tail.receiveShadow = true;
+			tail.castShadow = true;
+			group.add(tail);
+
+ 		
+			//var texture = new THREE.TextureLoader().load('images/sand3.jpg');
+			var floorgeometry = new THREE.PlaneGeometry(15,-15, 15, 5);
+			var floormaterial = new THREE.MeshPhongMaterial( {color: 0xB5693B,  shading: THREE.FlatShading});
+			//var floormaterial = new THREE.MeshPhongMaterial( {map: texture});
+			var floor = new THREE.Mesh(floorgeometry, floormaterial);
+			floor.rotation.x += Math.PI/2;
+			floor.position.y += -1;
+			floor.receiveShadow = true; 
+			group.add(floor);
+
+			//create the sun
+		    var geom = new THREE.IcosahedronGeometry(0.9, 1);
+			var mat = new THREE.MeshPhongMaterial({
+			    color: 0xffffff,
+			    shading: THREE.FlatShading
+			  });
+			planet = new THREE.Mesh(geom, mat);
+            planet.position.y = 3;
+			planet.position.x = 5;
+			planet.position.z = -2
+            scene.add(planet);
+
+		    var w = 112,
+			h = 112,
+			data = new Float32Array(w*h*3);
+			for (var i=0; i<data.length; i++) { 
+				data[i] = i % 3 == 0 ? 0 : Math.random() * 15
+					    //data[i].receiveShadow = true;
+			};
+								//create ground
+			 var texture = new THREE.DataTexture(data, w, h, THREE.RGBFormat, THREE.FloatType);
+			 texture.needsUpdate = true;
+
+		     texture.receiveShadow = true; 
+			
+            //create stars
+            var starsGeometry = new THREE.TetrahedronGeometry(2, 0);		
+			var starsMaterial  = new THREE.MeshPhongMaterial({
+			    map: texture,
+			    shading: THREE.FlatShading
+			  });
+           for (var i = 0; i < 1000; i++) {
+		    var mesh = new THREE.Mesh(starsGeometry, starsMaterial );
+		    mesh.position.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+		    mesh.position.multiplyScalar(90 + (Math.random() * 70));
+		    mesh.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
+		    particle.add(mesh);
+		  }
+
+
+		  //add buttons to move in the scene 
+		  document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+		  document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+		  document.addEventListener( 'touchmove', onDocumentTouchMove, false )
+		  window.addEventListener( 'resize', onWindowResize, false );
+
+
+	}	
+			
+			
+		//button functions
+
+		function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+
+			function onDocumentMouseDown( event ) {
+				event.preventDefault();
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.addEventListener( 'mouseout', onDocumentMouseOut, false );
+				mouseXOnMouseDown = event.clientX - windowHalfX;
+				targetRotationOnMouseDown = targetRotation;
+			}
+
+
+			function onDocumentMouseMove( event ) {
+				mouseX = event.clientX - windowHalfX;
+				targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.02;
+			}
+			function onDocumentMouseUp() {
+				document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+			}
+			function onDocumentMouseOut() {
+				document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+			}
+			function onDocumentTouchStart( event ) {
+				if ( event.touches.length == 1 ) {
+					event.preventDefault();
+					mouseXOnMouseDown = event.touches[ 0 ].pageX - windowHalfX;
+					targetRotationOnMouseDown = targetRotation;
+				}
+			}
+			function onDocumentTouchMove( event ) {
+				if ( event.touches.length == 1 ) {
+					event.preventDefault();
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.05;
+				}
+			}
+
+			function onMouseMove( e ) {
+							mouse.x = e.clientX;
+							mouse.y = e.clientY;
+						}
+
+
+					//animate function which is equivalent to render. 
+
+			function animate(){
+				requestAnimationFrame( animate );
+				group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
+				planet.rotation.x -= 0.02;
+  				planet.rotation.y -= 0.03;
+  				particle.rotation.y -= 0.004;
+            	renderer.clear();
+				renderer.render( scene, camera );
+
+			};
+
+		</script>
+	</body>
+</html>
